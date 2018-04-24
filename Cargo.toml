@@ -1,0 +1,18 @@
+[package]
+name = "line-stickers-scraper"
+version = "0.1.0"
+authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
+
+[dependencies]
+failure = "=0.1.1"
+reqwest = "=0.8.5"
+serde = "=1.0.43"
+serde_derive = "=1.0.43"
+scraper = "=0.6.0"
+structopt = "=0.2.7"
+structopt-derive = "=0.2.7"
+vlog = "=0.1.1"
+
+[[bin]]
+name = "line-stickers-scraper"
+path = "src/main.rs"
