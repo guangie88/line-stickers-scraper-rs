@@ -9,9 +9,10 @@ extern crate structopt_derive;
 extern crate vlog;
 
 use regex::Regex;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use scraper::{Html, Selector};
-use std::io::Read;
+use std::fs::{create_dir_all, File};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
@@ -33,6 +34,15 @@ struct Conf {
     /// e.g. <https://store.line.me/stickershop/product/1111425/en>
     url: String,
 
+    #[structopt(
+        short = "o",
+        long = "outdir",
+        default_value = "output",
+        parse(from_os_str)
+    )]
+    /// Output directory, created if not present
+    outdir: PathBuf,
+
     #[structopt(short = "v", parse(from_occurrences))]
     /// Verbose flag (-v, -vv, -vvv)
     verbose: u8,
@@ -43,6 +53,8 @@ fn run(conf: &Conf) -> Result<()> {
 
     let image_url_parse_re = Regex::new(IMAGE_URL_PARSE_RE)?;
     let image_num_sub_parse_re = Regex::new(IMAGE_NUM_SUB_PARSE_RE)?;
+
+    create_dir_all(&conf.outdir)?;
 
     let client = Client::new();
 
@@ -55,6 +67,7 @@ fn run(conf: &Conf) -> Result<()> {
     let html = Html::parse_document(&body);
     let sel = Selector::parse(STICKER_PARSE_CSS).unwrap();
 
+    // formulate the image URLs and output names
     let url_output_paths = html.select(&sel)
         .filter_map(|sel| sel.value().attr(STYLE))
         .map(|style| {
@@ -62,7 +75,7 @@ fn run(conf: &Conf) -> Result<()> {
             cap[1].to_owned()
         })
         .map(|image_url| {
-            let output_path = {
+            let output_name = {
                 let cap = image_num_sub_parse_re
                     .captures(&image_url)
                     .unwrap();
@@ -72,11 +85,31 @@ fn run(conf: &Conf) -> Result<()> {
                 p
             };
 
-            (image_url, output_path)
+            (image_url, output_name)
         });
 
-    for (image_url, output_path) in url_output_paths {
-        v1!("{} -> {:?}", image_url, output_path);
+    for (image_url, output_name) in url_output_paths {
+        let output_path = {
+            let mut output_path = conf.outdir.clone();
+            output_path.push(output_name);
+            output_path
+        };
+
+        v2!("Downloading {} -> {:?}", image_url, output_path);
+
+        let mut resp = client.get(&image_url).send()?;
+
+        if resp.status() == StatusCode::Ok {
+            let mut output_file = File::create(&output_path)?;
+
+            let mut buf = vec![];
+            resp.read_to_end(&mut buf)?;
+            output_file.write_all(&buf)?;
+        } else {
+            let mut body = String::new();
+            resp.read_to_string(&mut body)?;
+            ve0!("Download error: {}", body);
+        }
     }
 
     Ok(())
