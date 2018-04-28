@@ -17,7 +17,6 @@ use scraper::{Html, Selector};
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::str::FromStr;
 use structopt::StructOpt;
 
 type Result<T> = std::result::Result<T, failure::Error>;
@@ -83,7 +82,10 @@ fn run(conf: &Conf) -> Result<()> {
                     .captures(&image_url)
                     .unwrap();
 
-                let mut p = PathBuf::from_str(&cap[1]).unwrap();
+                // only allowed if Stable is in 1.26
+                // let mut p = PathBuf::from_str(&cap[1]).unwrap();
+                let mut p = PathBuf::new();
+                p.push(&cap[1]);
                 p.set_extension("png");
                 p
             };
