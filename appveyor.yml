@@ -1,0 +1,50 @@
+# source: https://github.com/starkat99/appveyor-rust/blob/master/appveyor.yml
+# source: https://github.com/japaric/rust-everywhere/blob/master/appveyor.yml
+
+version: 0.1.0-build{build}
+
+matrix:
+  fast_finish: true
+
+environment:
+  PROJECT_NAME: line-stickers-scraper-rs
+  matrix:
+  # Stable channel
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: stable
+
+  # Beta channel
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: beta
+    
+  # Nightly channel
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: nightly
+
+install:
+- curl -sSf -o rustup-init.exe https://win.rustup.rs
+- rustup-init.exe --default-host %TARGET% --default-toolchain %CHANNEL% -y
+- set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+- rustc -vV
+- cargo -vV
+- if "%TARGET%"=="i686-pc-windows-gnu"
+    cinst mingw --x86 -y &
+    set "PATH=%PATH%;C:\tools\mingw32\bin" &
+    gcc --version
+- if "%TARGET%"=="x86_64-pc-windows-gnu"
+    cinst mingw -y &
+    set "PATH=%PATH%;C:\tools\mingw64\bin" &
+    gcc --version
+- echo %PATH%
+
+# `cargo test` takes care of building for us, so disable Appveyor's build stage.
+build: off
+
+test_script:
+- cargo build --verbose
+- cargo test --all
+
+branches:
+  only:
+  - master
+  - /^v\d+\.\d+\.\d+(-\S*)?$/
