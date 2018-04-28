@@ -80,10 +80,12 @@ after_success:
       --upload-file $ZIP_FILE \
       "https://uploads.github.com/repos/$REPO_USERNAME/$REPO_NAME/releases/$TAG_ID/assets?name=$ZIP_FILE"
   elif [ "$COVERAGE" = "true" ] && [ -z "$TRAVIS_TAG" ]; then
-    docker run --security-opt seccomp=unconfined -v "$PWD:/volume" \
-      guangie88/ubuntu-cargo-tarpaulin:xenial-stable "
-        cargo tarpaulin --all --out Xml \
-        && bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN"
+    echo "Not running coverage due to bug in Rust compiler"
+    
+    # docker run --security-opt seccomp=unconfined -v "$PWD:/volume" \
+    #   guangie88/ubuntu-cargo-tarpaulin:xenial-stable "
+    #     cargo tarpaulin --all --out Xml \
+    #     && bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN"
   fi
 
 branches:
