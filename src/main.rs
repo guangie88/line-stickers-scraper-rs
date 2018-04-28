@@ -1,3 +1,6 @@
+#![cfg_attr(feature = "cargo-clippy", deny(clippy))]
+#![deny(missing_debug_implementations, warnings)]
+
 extern crate failure;
 extern crate regex;
 extern crate reqwest;
