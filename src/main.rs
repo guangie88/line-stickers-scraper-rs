@@ -1,6 +1,8 @@
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
 #![deny(missing_debug_implementations, warnings)]
 
+extern crate cssparser;
+#[macro_use]
 extern crate failure;
 extern crate regex;
 extern crate reqwest;
@@ -10,6 +12,8 @@ extern crate structopt;
 extern crate structopt_derive;
 #[macro_use]
 extern crate vlog;
+
+mod error;
 
 use regex::Regex;
 use reqwest::{Client, StatusCode};
@@ -61,20 +65,23 @@ fn run(conf: &Conf) -> Result<()> {
     let client = Client::new();
 
     let mut resp = client.get(&conf.url).send()?;
+
     let mut body = String::new();
     resp.read_to_string(&mut body)?;
 
     v1!("Status: {}", resp.status());
 
     let html = Html::parse_document(&body);
-    let sel = Selector::parse(STICKER_PARSE_CSS).unwrap();
+
+    let sel_res = Selector::parse(STICKER_PARSE_CSS);
+    let sel = sel_res.map_err(|e| -> error::ParseError<_> { e })?;
 
     // formulate the image URLs and output names
     let url_output_paths = html.select(&sel)
         .filter_map(|sel| sel.value().attr(STYLE))
         .map(|style| {
-            let cap = image_url_parse_re.captures(style).unwrap();
-            cap[1].to_owned()
+            let image_url_cap = image_url_parse_re.captures(style).unwrap();
+            image_url_cap[1].to_owned()
         })
         .map(|image_url| {
             let output_name = {
@@ -82,8 +89,6 @@ fn run(conf: &Conf) -> Result<()> {
                     .captures(&image_url)
                     .unwrap();
 
-                // only allowed if Stable is in 1.26
-                // let mut p = PathBuf::from_str(&cap[1]).unwrap();
                 let mut p = PathBuf::new();
                 p.push(&cap[1]);
                 p.set_extension("png");

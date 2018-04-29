@@ -13,6 +13,7 @@ travis-ci = { repository = "guangie88/line-stickers-scraper-rs" }
 codecov = { repository = "guangie88/line-stickers-scraper-rs" }
 
 [dependencies]
+cssparser = "=0.23.6"
 failure = "=0.1.1"
 regex = "=0.2.10"
 reqwest = "=0.8.5"
