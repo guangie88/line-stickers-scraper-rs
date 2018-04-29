@@ -7,6 +7,7 @@ extern crate failure;
 extern crate regex;
 extern crate reqwest;
 extern crate scraper;
+extern crate selectors;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
@@ -73,8 +74,8 @@ fn run(conf: &Conf) -> Result<()> {
 
     let html = Html::parse_document(&body);
 
-    let sel_res = Selector::parse(STICKER_PARSE_CSS);
-    let sel = sel_res.map_err(|e| -> error::ParseError<_> { e })?;
+    let sel = Selector::parse(STICKER_PARSE_CSS)
+        .map_err(|e| error::ParseError::from(e))?;
 
     // formulate the image URLs and output names
     let url_output_paths = html.select(&sel)

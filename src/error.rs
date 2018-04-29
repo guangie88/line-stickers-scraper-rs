@@ -1,26 +1,34 @@
-use cssparser::{self, ParseErrorKind, SourceLocation};
-use std::fmt::{self, Debug, Display, Formatter};
+// use cssparser::{self, ParseErrorKind, SourceLocation};
+use cssparser::{self, SourceLocation};
+use std::fmt::Debug;
+
+// #[derive(Debug, Fail)]
+// #[fail(display = "{{ kind: {:?}, location: {:?} }}", kind, location)]
+// pub struct ParseError<'i, E: 'i + Debug> {
+//     pub kind: ParseErrorKind<'i, E>,
+//     pub location: SourceLocation,
+// }
+
+// impl<'i, E: 'i + Debug> From<cssparser::ParseError<'i, E>>
+//     for ParseError<'i, E>
+// {
+//     fn from(e: cssparser::ParseError<'i, E>) -> ParseError<'i, E> {
+//         ParseError {
+//             kind: e.kind,
+//             location: e.location,
+//         }
+//     }
+// }
 
 #[derive(Debug, Fail)]
-pub struct ParseError<'i, E: 'i> {
-    pub kind: ParseErrorKind<'i, E>,
+#[fail(display = "{{ location: {:?} }}", location)]
+pub struct ParseError {
     pub location: SourceLocation,
 }
 
-impl<'i, T: 'i + Debug> Display for ParseError<'i, T> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{{ kind: {:?}, location: {:?} }}",
-            self.kind, self.location
-        )
-    }
-}
-
-impl<'i, Eq: 'i> From<cssparser::ParseError<'i, Eq>> for ParseError<'i, Eq> {
-    fn from(e: cssparser::ParseError<'i, Eq>) -> ParseError<'i, Eq> {
+impl<'i, E: 'i + Debug> From<cssparser::ParseError<'i, E>> for ParseError {
+    fn from(e: cssparser::ParseError<'i, E>) -> ParseError {
         ParseError {
-            kind: e.kind,
             location: e.location,
         }
     }
