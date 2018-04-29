@@ -1,6 +1,5 @@
 // use cssparser::{self, ParseErrorKind, SourceLocation};
 use cssparser::{self, SourceLocation};
-use std::fmt::Debug;
 
 // #[derive(Debug, Fail)]
 // #[fail(display = "{{ kind: {:?}, location: {:?} }}", kind, location)]
@@ -26,7 +25,7 @@ pub struct ParseError {
     pub location: SourceLocation,
 }
 
-impl<'i, E: 'i + Debug> From<cssparser::ParseError<'i, E>> for ParseError {
+impl<'i, E: 'i> From<cssparser::ParseError<'i, E>> for ParseError {
     fn from(e: cssparser::ParseError<'i, E>) -> ParseError {
         ParseError {
             location: e.location,
