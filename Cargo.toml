@@ -1,6 +1,6 @@
 [package]
 name = "line-stickers-scraper"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
 description = "Executable in Rust to scrap and save LINE sticker PNGs from URL"
 repository = "https://github.com/guangie88/line-stickers-scraper-rs"
@@ -13,6 +13,7 @@ travis-ci = { repository = "guangie88/line-stickers-scraper-rs" }
 codecov = { repository = "guangie88/line-stickers-scraper-rs" }
 
 [dependencies]
+cssparser = "=0.23.6"
 failure = "=0.1.1"
 regex = "=0.2.10"
 reqwest = "=0.8.5"

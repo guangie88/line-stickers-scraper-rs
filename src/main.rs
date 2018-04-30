@@ -1,6 +1,8 @@
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
 #![deny(missing_debug_implementations, warnings)]
 
+extern crate cssparser;
+#[macro_use]
 extern crate failure;
 extern crate regex;
 extern crate reqwest;
@@ -10,6 +12,8 @@ extern crate structopt;
 extern crate structopt_derive;
 #[macro_use]
 extern crate vlog;
+
+mod error;
 
 use regex::Regex;
 use reqwest::{Client, StatusCode};
@@ -61,34 +65,54 @@ fn run(conf: &Conf) -> Result<()> {
     let client = Client::new();
 
     let mut resp = client.get(&conf.url).send()?;
+
     let mut body = String::new();
     resp.read_to_string(&mut body)?;
 
     v1!("Status: {}", resp.status());
 
     let html = Html::parse_document(&body);
-    let sel = Selector::parse(STICKER_PARSE_CSS).unwrap();
+
+    let sel =
+        Selector::parse(STICKER_PARSE_CSS).map_err(error::ParseError::from)?;
 
     // formulate the image URLs and output names
     let url_output_paths = html.select(&sel)
         .filter_map(|sel| sel.value().attr(STYLE))
-        .map(|style| {
-            let cap = image_url_parse_re.captures(style).unwrap();
-            cap[1].to_owned()
-        })
-        .map(|image_url| {
-            let output_name = {
-                let cap = image_num_sub_parse_re
-                    .captures(&image_url)
-                    .unwrap();
+        .filter_map(|style| {
+            let image_url = image_url_parse_re
+                .captures(style)
+                .and_then(|image_url_cap| image_url_cap.get(1))
+                .map(|image_url| image_url.as_str().to_owned());
 
-                // only allowed if Stable is in 1.26
-                // let mut p = PathBuf::from_str(&cap[1]).unwrap();
-                let mut p = PathBuf::new();
-                p.push(&cap[1]);
-                p.set_extension("png");
-                p
-            };
+            if image_url.is_none() {
+                ve0!(
+                    "Unable to capture image URL from original text: {}",
+                    style
+                );
+            }
+
+            image_url
+        })
+        .filter_map(|image_url| {
+            let image_id = image_num_sub_parse_re
+                .captures(&image_url)
+                .and_then(|image_cap| image_cap.get(1))
+                .map(|image_id| image_id.as_str().to_owned());
+
+            if image_id.is_none() {
+                ve0!(
+                    "Unable to capture unique ID from image URL: {}",
+                    image_url
+                );
+            }
+
+            image_id.map(|image_id| (image_url, image_id))
+        })
+        .map(|(image_url, image_id)| {
+            let mut output_name = PathBuf::new();
+            output_name.push(image_id);
+            output_name.set_extension("png");
 
             (image_url, output_name)
         });
