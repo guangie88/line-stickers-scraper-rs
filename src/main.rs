@@ -73,8 +73,8 @@ fn run(conf: &Conf) -> Result<()> {
 
     let html = Html::parse_document(&body);
 
-    let sel = Selector::parse(STICKER_PARSE_CSS)
-        .map_err(|e| error::ParseError::from(e))?;
+    let sel =
+        Selector::parse(STICKER_PARSE_CSS).map_err(error::ParseError::from)?;
 
     // formulate the image URLs and output names
     let url_output_paths = html.select(&sel)
