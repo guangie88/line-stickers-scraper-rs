@@ -7,7 +7,6 @@ extern crate failure;
 extern crate regex;
 extern crate reqwest;
 extern crate scraper;
-extern crate selectors;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
@@ -84,17 +83,28 @@ fn run(conf: &Conf) -> Result<()> {
             let image_url_cap = image_url_parse_re.captures(style).unwrap();
             image_url_cap[1].to_owned()
         })
-        .map(|image_url| {
-            let output_name = {
-                let cap = image_num_sub_parse_re
-                    .captures(&image_url)
-                    .unwrap();
+        .filter_map(|image_url| {
+            let image_id = image_num_sub_parse_re
+                .captures(&image_url)
+                .and_then(|image_cap| image_cap.get(1))
+                .map(|image_id| image_id.as_str().to_owned());
 
-                let mut p = PathBuf::new();
-                p.push(&cap[1]);
-                p.set_extension("png");
-                p
-            };
+            match image_id {
+                Some(image_id) => Some((image_url, image_id)),
+                None => {
+                    ve0!(
+                        "Unable to capture unique ID from image URL: {}",
+                        image_url
+                    );
+
+                    None
+                }
+            }
+        })
+        .map(|(image_url, image_id)| {
+            let mut output_name = PathBuf::new();
+            output_name.push(image_id);
+            output_name.set_extension("png");
 
             (image_url, output_name)
         });
