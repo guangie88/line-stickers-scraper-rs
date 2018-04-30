@@ -79,9 +79,20 @@ fn run(conf: &Conf) -> Result<()> {
     // formulate the image URLs and output names
     let url_output_paths = html.select(&sel)
         .filter_map(|sel| sel.value().attr(STYLE))
-        .map(|style| {
-            let image_url_cap = image_url_parse_re.captures(style).unwrap();
-            image_url_cap[1].to_owned()
+        .filter_map(|style| {
+            let image_url = image_url_parse_re
+                .captures(style)
+                .and_then(|image_url_cap| image_url_cap.get(1))
+                .map(|image_url| image_url.as_str().to_owned());
+
+            if image_url.is_none() {
+                ve0!(
+                    "Unable to capture image URL from original text: {}",
+                    style
+                );
+            }
+
+            image_url
         })
         .filter_map(|image_url| {
             let image_id = image_num_sub_parse_re
@@ -89,17 +100,14 @@ fn run(conf: &Conf) -> Result<()> {
                 .and_then(|image_cap| image_cap.get(1))
                 .map(|image_id| image_id.as_str().to_owned());
 
-            match image_id {
-                Some(image_id) => Some((image_url, image_id)),
-                None => {
-                    ve0!(
-                        "Unable to capture unique ID from image URL: {}",
-                        image_url
-                    );
-
-                    None
-                }
+            if image_id.is_none() {
+                ve0!(
+                    "Unable to capture unique ID from image URL: {}",
+                    image_url
+                );
             }
+
+            image_id.map(|image_id| (image_url, image_id))
         })
         .map(|(image_url, image_id)| {
             let mut output_name = PathBuf::new();
